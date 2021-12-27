@@ -74,5 +74,7 @@ export const handleTransfer = async (substrateEvent: SubstrateEvent) => {
   transfer.from_freeBalance = fromAccount.freeBalance;
   transfer.from_reserveBalance = fromAccount.reserveBalance;
   transfer.from_totalBalance = fromAccount.totalBalance;
+  await toAccount.save();
+  await fromAccount.save();
   await transfer.save();
 };
