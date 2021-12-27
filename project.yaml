@@ -3,7 +3,7 @@ description: ''
 repository: ''
 schema: ./schema.graphql
 network:
-  endpoint: wss://polkadot.api.onfinality.io/public-ws
+  endpoint: wss://polkadot.api.onfinality.io/ws?apikey=cb6c9187-43a3-4e33-b5ff-80fd1bc48b30
   dictionary: https://api.subquery.network/sq/subquery/dictionary-polkadot
 dataSources:
   - name: main
