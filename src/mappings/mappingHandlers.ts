@@ -4,6 +4,7 @@ import {Balance} from "@polkadot/types/interfaces";
 
 import {
     handleTransfer,
+    handleBalnaceSet,
 } from '../handlers/balance-handler';
 
 

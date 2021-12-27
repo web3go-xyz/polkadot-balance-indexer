@@ -1,6 +1,7 @@
 import { SubstrateBlock, SubstrateEvent } from '@subql/types';
 import { Account } from '../types/models/Account';
 import { Transfer } from '../types/models/Transfer';
+import { BalanceSet } from '../types/models/BalanceSet';
 import { IDGenerator } from '../types/models/IDGenerator';
 import { Balance } from "@polkadot/types/interfaces";
 
@@ -77,4 +78,42 @@ export const handleTransfer = async (substrateEvent: SubstrateEvent) => {
   await toAccount.save();
   await fromAccount.save();
   await transfer.save();
+};
+
+export const handleBalnaceSet = async (substrateEvent: SubstrateEvent) => {
+  const { event, block } = substrateEvent;
+  const { timestamp: createdAt, block: rawBlock } = block;
+  const { number: blockNum } = rawBlock.header;
+  const [ accountToSet,balance1,balance2] = event.data.toJSON() as [string, bigint, bigint];
+
+
+  logger.info(`BalanceSet happened!: ${JSON.stringify(event)}`);
+
+  //ensure that our account entities exist
+  let account = await Account.get(accountToSet);
+  if (!account) {
+    account = await _createNewAccount(accountToSet);
+  }  
+
+  // Create the new transfer entity
+  const balanceSet = new BalanceSet(
+        `${blockNum}-${createdAt}-${account}`,
+    );
+  balanceSet.blockNumber = blockNum.toBigInt();
+  balanceSet.aid = await getID();
+
+  //save old balance
+  balanceSet.freeBalance_old = account.freeBalance;
+  balanceSet.reserveBalance_old = account.reserveBalance;
+  balanceSet.totalBalance_old = account.totalBalance;
+  //set new balance
+  balanceSet.freeBalance = BigInt(balance1);
+  balanceSet.reserveBalance = BigInt(balance2);
+  balanceSet.totalBalance = balanceSet.freeBalance + balanceSet.reserveBalance;
+  //set new balance to account
+  account.freeBalance = BigInt(balance1);
+  account.reserveBalance = BigInt(balance2);
+  account.totalBalance = BigInt(balance1) + BigInt(balance2);
+  await account.save();
+  await balanceSet.save();
 };

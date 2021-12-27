@@ -6,6 +6,7 @@ type Account @entity {
   aid:BigInt!
   sentTransfers: [Transfer] @derivedFrom(field: "from")
   recievedTransfers: [Transfer] @derivedFrom(field: "to")
+  balanceSet:[BalanceSet] @derivedFrom(field: "account")
 }
 
 
@@ -22,6 +23,19 @@ type Transfer @entity {
   to_totalBalance:BigInt
   from_totalBalance:BigInt
   aid:BigInt!
+}
+
+type BalanceSet @entity{
+  id: ID! 
+  blockNumber: BigInt
+  account: Account!
+  aid:BigInt!
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  freeBalance_old: BigInt
+  reserveBalance_old: BigInt
+  totalBalance:BigInt
+  totalBalance_old: BigInt
 }
 
 
