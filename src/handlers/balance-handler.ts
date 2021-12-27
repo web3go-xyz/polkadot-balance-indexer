@@ -55,7 +55,7 @@ export const handleTransfer = async (substrateEvent: SubstrateEvent) => {
     
   // Create the new transfer entity
   const transfer = new Transfer(
-        `${blockNum}-${event.}`,
+        `${blockNum}-${createdAt}-${from}-${to}`,
     );
   transfer.blockNumber = blockNum.toBigInt();
   transfer.fromId = from;
