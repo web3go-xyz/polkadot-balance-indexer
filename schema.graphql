@@ -3,6 +3,7 @@ type Account @entity {
   freeBalance: BigInt
   reserveBalance: BigInt
   totalBalance: BigInt
+  aid:BigInt!
   sentTransfers: [Transfer] @derivedFrom(field: "from")
   recievedTransfers: [Transfer] @derivedFrom(field: "to")
 }
@@ -18,6 +19,9 @@ type Transfer @entity {
   to_freeBalance: BigInt
   from_reserveBalance: BigInt
   to_reserveBalance: BigInt
+  to_totalBalance:BigInt
+  from_totalBalance:BigInt
+  aid:BigInt!
 }
 
 
