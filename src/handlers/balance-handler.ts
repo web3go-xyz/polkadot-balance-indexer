@@ -2,6 +2,7 @@ import { SubstrateBlock, SubstrateEvent } from '@subql/types';
 import { Account } from '../types/models/Account';
 import { Transfer } from '../types/models/Transfer';
 import { IDGenerator } from '../types/models/IDGenerator';
+import {Balance} from "@polkadot/types/interfaces";
 
 
 const generaterID = "GENERATOR"
@@ -27,10 +28,28 @@ export const handleTransfer = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-
-  // logger.info(`New Transfer happened!: ${JSON.stringify(event)}`);
   const [from,to,balanceChange] = event.data.toJSON() as [string, string, bigint];
 
-  // const {event: {data: [blockNumber,roundindex,collators,balance]}} = substrateEvent;
+
   logger.info(`New Transfer happened!: ${JSON.stringify(event)}`);
+
+  //ensure that our account entities exist
+  const fromAccount = await Account.get(from);
+  if (!fromAccount) {
+    await new Account(from).save();
+  }  
+  const toAccount = await Account.get(to.toString());
+  if (!toAccount) {
+    await new Account(to).save();
+  }
+    
+  // Create the new transfer entity
+  const transfer = new Transfer(
+        `${blockNum}-${event.}`,
+    );
+    transfer.blockNumber = blockNum.toBigInt();
+    transfer.fromId = from;
+    transfer.toId = to;
+    transfer.balanceChange = balanceChange;
+    await transfer.save();
 };
