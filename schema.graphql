@@ -1,13 +1,29 @@
+type Account @entity {
+  id: ID!
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  totalBalance: BigInt
+  sentTransfers: [Transfer] @derivedFrom(field: "from")
+  recievedTransfers: [Transfer] @derivedFrom(field: "to")
+}
+
+
 type Transfer @entity {
   id: ID!
-  amount: BigInt
   blockNumber: BigInt
   to: Account!
   from: Account!
+  balanceChange: BigInt
+  from_freeBalance: BigInt
+  to_freeBalance: BigInt
+  from_reserveBalance: BigInt
+  to_reserveBalance: BigInt
 }
 
-type Account @entity {
-  id: ID!
-  sentTransfers: [Transfer] @derivedFrom(field: "from")
-  recievedTransfers: [Transfer] @derivedFrom(field: "to")
+
+type IDGenerator @entity {
+    "id"
+    id: ID!
+    "asscending ID"
+    aID: BigInt!
 }
