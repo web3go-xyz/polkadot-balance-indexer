@@ -1,10 +1,8 @@
 import {SubstrateEvent, SubstrateBlock} from "@subql/types";
-import {Transfer, Account} from "../types";
-import {Balance} from "@polkadot/types/interfaces";
 
 import {
     handleTransfer,
-    handleBalnaceSet,
+    handleBalanceSet,
     handleDeposit,
     handleReserved,
     handleWithdraw,
