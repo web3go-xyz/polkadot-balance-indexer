@@ -5,6 +5,12 @@ import {Balance} from "@polkadot/types/interfaces";
 import {
     handleTransfer,
     handleBalnaceSet,
+    handleDeposit,
+    handleReserved,
+    handleWithdraw,
+    handleUnreserved,
+    handleSlash,
+    handleReservRepatriated,
 } from '../handlers/balance-handler';
 
 

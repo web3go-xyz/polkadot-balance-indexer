@@ -30,6 +30,7 @@ type BalanceSet @entity{
   blockNumber: BigInt
   account: Account!
   aid:BigInt!
+  balanceChange: BigInt
   freeBalance: BigInt
   reserveBalance: BigInt
   freeBalance_old: BigInt
@@ -38,6 +39,95 @@ type BalanceSet @entity{
   totalBalance_old: BigInt
 }
 
+type Deposit @entity{
+  id: ID! 
+  blockNumber: BigInt
+  account: Account!
+  aid:BigInt!
+  balanceChange: BigInt
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  freeBalance_old: BigInt
+  reserveBalance_old: BigInt
+  totalBalance:BigInt
+  totalBalance_old: BigInt
+}
+
+type Reserved @entity{
+  id: ID! 
+  blockNumber: BigInt
+  account: Account!
+  aid:BigInt!
+  balanceChange: BigInt
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  freeBalance_old: BigInt
+  reserveBalance_old: BigInt
+  totalBalance:BigInt
+  totalBalance_old: BigInt
+}
+
+type Unreserved @entity{
+  id: ID! 
+  blockNumber: BigInt
+  account: Account!
+  aid:BigInt!
+  balanceChange: BigInt
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  freeBalance_old: BigInt
+  reserveBalance_old: BigInt
+  totalBalance:BigInt
+  totalBalance_old: BigInt
+}
+
+type Withdraw @entity{
+  id: ID! 
+  blockNumber: BigInt
+  account: Account!
+  aid:BigInt!
+  balanceChange: BigInt
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  freeBalance_old: BigInt
+  reserveBalance_old: BigInt
+  totalBalance:BigInt
+  totalBalance_old: BigInt
+}
+
+type Slash @entity{
+  id: ID! 
+  blockNumber: BigInt
+  account: Account!
+  aid:BigInt!
+  balanceChange: BigInt
+  freeBalance_old: BigInt
+  reserveBalance_old: BigInt
+  totalBalance:BigInt
+  totalBalance_old: BigInt
+}
+
+type ReservRepatriated @entity{
+  id: ID!
+  blockNumber: BigInt
+  to: Account!
+  from: Account!
+  status: String
+  balanceChange: BigInt
+  from_freeBalance: BigInt
+  from_reserveBalance: BigInt
+  from_freeBalance_old: BigInt
+  from_reserveBalance_old: BigInt
+  from_totalBalance:BigInt
+  from_totalBalance_old: BigInt
+  to_freeBalance: BigInt
+  to_reserveBalance: BigInt
+  to_freeBalance_old: BigInt
+  to_reserveBalance_old: BigInt
+  to_totalBalance:BigInt
+  to_totalBalance_old: BigInt
+  aid:BigInt!
+}
 
 type IDGenerator @entity {
     "id"
