@@ -10,8 +10,9 @@ import { Unreserved } from '../types/models/Unreserved';
 import { Withdraw } from '../types/models/Withdraw';
 import { Slash } from '../types/models/Slash';
 import { ReservRepatriated } from '../types/models/ReservRepatriated';
+import { AccountInfo } from '@polkadot/types/interfaces/system';
 
-const generaterID = "GENERATOR"
+const generaterID = "GENERATOR";
 
 const getID = async () => {
   let generator = await IDGenerator.get(generaterID);
@@ -30,11 +31,43 @@ const getID = async () => {
   }
 }
 
+
+async function getAccountInfo(address: string): Promise<any> {
+
+  logger.info(`query account addres:${address}`);
+
+  const raw: AccountInfo = await api.query.system.account(address);
+
+  let accountInfo: any = {};
+  if (raw) {
+    accountInfo = {
+      address: address,
+      free: raw.data.free.toBigInt(),
+      reserved: raw.data.reserved.toBigInt(),
+      total: raw.data.free.toBigInt() + raw.data.reserved.toBigInt()
+    };
+  }
+  else {
+    accountInfo = {
+      address: address,
+      free: 0,
+      reserved: 0,
+      total: 0
+    }
+  }
+  logger.info(`getAccountInfo : ${(accountInfo.address)}--${accountInfo.free}--${accountInfo.reserved}--${accountInfo.total}`);
+  return accountInfo;
+}
+
 const _createNewAccount = async (address: string) => {
   const account = new Account(address);
-  account.freeBalance = BigInt(0);
-  account.reserveBalance = BigInt(0);
-  account.totalBalance = BigInt(0);
+  //TODO indexer的问题研究好了, 逻辑要调整一下.
+  //因为在某个高度拿到的账户balance是已经结算好的了, 因此在这个高度上发生的交易等事件, 就不需要重复计算了.
+  let findAccountInfo = await getAccountInfo(address);
+
+  account.freeBalance = BigInt(findAccountInfo.free);
+  account.reserveBalance = BigInt(findAccountInfo.reserved);
+  account.totalBalance = BigInt(findAccountInfo.total);
   account.aid = await getID();
   await account.save();
   return account;
@@ -90,7 +123,7 @@ export const handleBalnaceSet = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ accountToSet,balance1,balance2] = event.data.toJSON() as [string, bigint, bigint];
+  const [accountToSet, balance1, balance2] = event.data.toJSON() as [string, bigint, bigint];
 
 
   logger.info(`BalanceSet happened!: ${JSON.stringify(event)}`);
@@ -99,12 +132,12 @@ export const handleBalnaceSet = async (substrateEvent: SubstrateEvent) => {
   let account = await Account.get(accountToSet);
   if (!account) {
     account = await _createNewAccount(accountToSet);
-  }  
+  }
 
   // Create the new BalacneSet entity
   const balanceSet = new BalanceSet(
     `${blockNum}-${event.index}`,
-    );
+  );
   balanceSet.blockNumber = blockNum.toBigInt();
   balanceSet.aid = await getID();
   balanceSet.balanceChange = BigInt(balance1) + BigInt(balance2);
@@ -131,7 +164,7 @@ export const handleDeposit = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ accountToSet,balance] = event.data.toJSON() as [string, bigint];
+  const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
 
 
   logger.info(`Deposit happened!: ${JSON.stringify(event)}`);
@@ -140,12 +173,12 @@ export const handleDeposit = async (substrateEvent: SubstrateEvent) => {
   let account = await Account.get(accountToSet);
   if (!account) {
     account = await _createNewAccount(accountToSet);
-  }  
+  }
 
   // Create the new Deposit entity
   const deposit = new Deposit(
     `${blockNum}-${event.index}`,
-    );
+  );
   deposit.blockNumber = blockNum.toBigInt();
   deposit.aid = await getID();
   deposit.balanceChange = BigInt(balance);
@@ -161,7 +194,7 @@ export const handleDeposit = async (substrateEvent: SubstrateEvent) => {
   //set new balance to account
   account.reserveBalance = deposit.reserveBalance;
   account.freeBalance = deposit.freeBalance;
-  account.totalBalance = deposit.totalBalance; 
+  account.totalBalance = deposit.totalBalance;
   await account.save();
   await deposit.save();
 };
@@ -171,7 +204,7 @@ export const handleReserved = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ accountToSet,balance] = event.data.toJSON() as [string, bigint];
+  const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
 
 
   logger.info(`Reserved happened!: ${JSON.stringify(event)}`);
@@ -180,12 +213,12 @@ export const handleReserved = async (substrateEvent: SubstrateEvent) => {
   let account = await Account.get(accountToSet);
   if (!account) {
     account = await _createNewAccount(accountToSet);
-  }  
+  }
 
   // Create the new Reserved entity
   const reserved = new Reserved(
     `${blockNum}-${event.index}`,
-    );
+  );
   reserved.blockNumber = blockNum.toBigInt();
   reserved.aid = await getID();
   reserved.balanceChange = BigInt(balance);
@@ -210,7 +243,7 @@ export const handleUnreserved = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ accountToSet,balance] = event.data.toJSON() as [string, bigint];
+  const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
 
 
   logger.info(`Unreserved happened!: ${JSON.stringify(event)}`);
@@ -219,12 +252,12 @@ export const handleUnreserved = async (substrateEvent: SubstrateEvent) => {
   let account = await Account.get(accountToSet);
   if (!account) {
     account = await _createNewAccount(accountToSet);
-  }  
+  }
 
   // Create the new Reserved entity
   const unreserved = new Unreserved(
     `${blockNum}-${event.index}`,
-    );
+  );
   unreserved.blockNumber = blockNum.toBigInt();
   unreserved.aid = await getID();
   unreserved.balanceChange = BigInt(balance);
@@ -246,11 +279,11 @@ export const handleUnreserved = async (substrateEvent: SubstrateEvent) => {
 
 
 //“AccountId” ‘s free balance - “Balance”
-export const handleWithdraw= async (substrateEvent: SubstrateEvent) => {
+export const handleWithdraw = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ accountToSet,balance] = event.data.toJSON() as [string, bigint];
+  const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
 
 
   logger.info(`Withdraw happened!: ${JSON.stringify(event)}`);
@@ -259,12 +292,12 @@ export const handleWithdraw= async (substrateEvent: SubstrateEvent) => {
   let account = await Account.get(accountToSet);
   if (!account) {
     account = await _createNewAccount(accountToSet);
-  }  
+  }
 
   // Create the new Withdraw entity
   const withdraw = new Withdraw(
     `${blockNum}-${event.index}`,
-    );
+  );
   withdraw.blockNumber = blockNum.toBigInt();
   withdraw.aid = await getID();
   withdraw.balanceChange = BigInt(balance);
@@ -279,7 +312,7 @@ export const handleWithdraw= async (substrateEvent: SubstrateEvent) => {
   //set new balance to account
   account.reserveBalance = withdraw.reserveBalance;
   account.freeBalance = withdraw.freeBalance;
-  account.totalBalance = withdraw.totalBalance; 
+  account.totalBalance = withdraw.totalBalance;
   await account.save();
   await withdraw.save();
 };
@@ -288,11 +321,11 @@ export const handleWithdraw= async (substrateEvent: SubstrateEvent) => {
 //(hard to determine if the slash happens on free/reserve)
 //If it is called through internal method “slash”, then it will prefer free balance first but potential slash reserve if free is not sufficient.
 //If it is called through internal method “slash_reserved”, then it will slash reserve only.
-export const handleSlash= async (substrateEvent: SubstrateEvent) => {
+export const handleSlash = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ accountToSet,balance] = event.data.toJSON() as [string, bigint];
+  const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
 
 
   logger.info(`Slash happened!: ${JSON.stringify(event)}`);
@@ -301,12 +334,12 @@ export const handleSlash= async (substrateEvent: SubstrateEvent) => {
   let account = await Account.get(accountToSet);
   if (!account) {
     account = await _createNewAccount(accountToSet);
-  }  
+  }
 
   // Create the new Withdraw entity
   const slash = new Slash(
-        `${blockNum}-${event.index}`,
-    );
+    `${blockNum}-${event.index}`,
+  );
   slash.blockNumber = blockNum.toBigInt();
   slash.aid = await getID();
   slash.balanceChange = BigInt(balance);
@@ -317,7 +350,7 @@ export const handleSlash= async (substrateEvent: SubstrateEvent) => {
   //set new balance
   slash.totalBalance = slash.freeBalance_old + slash.reserveBalance_old - BigInt(balance);
   //set new balance to account
-  account.totalBalance = slash.totalBalance; 
+  account.totalBalance = slash.totalBalance;
   await account.save();
   await slash.save();
 };
@@ -330,12 +363,12 @@ export const handleSlash= async (substrateEvent: SubstrateEvent) => {
     Status: Indicating the amount is added to receiver's reserve part or free part of balance.
     “AccountId1” ‘s reserve balance - “Balance”
     “AccountId2” ‘s “Status” balance + “Balance” (”Status” indicator of free/reserve part) */
-    
+
 export const handleReservRepatriated = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
   const { number: blockNum } = rawBlock.header;
-  const [ sender,receiver,balance,status] = event.data.toJSON() as [string, string, bigint, string];
+  const [sender, receiver, balance, status] = event.data.toJSON() as [string, string, bigint, string];
 
 
   logger.info(`Repatraiated happened!: ${JSON.stringify(event)}`);
@@ -344,16 +377,16 @@ export const handleReservRepatriated = async (substrateEvent: SubstrateEvent) =>
   let senderAccount = await Account.get(sender);
   if (!senderAccount) {
     senderAccount = await _createNewAccount(sender);
-  }  
+  }
   let receiverAccount = await Account.get(receiver);
   if (!receiverAccount) {
     receiverAccount = await _createNewAccount(receiver);
-  }  
+  }
 
   // Create the new Reserved entity
   const reservRepatriated = new ReservRepatriated(
     `${blockNum}-${event.index}`,
-    );
+  );
   reservRepatriated.blockNumber = blockNum.toBigInt();
   reservRepatriated.aid = await getID();
   reservRepatriated.balanceChange = BigInt(balance);
@@ -368,13 +401,13 @@ export const handleReservRepatriated = async (substrateEvent: SubstrateEvent) =>
   reservRepatriated.from_freeBalance = reservRepatriated.from_freeBalance_old;
   reservRepatriated.from_reserveBalance = reservRepatriated.from_reserveBalance_old - BigInt(balance);
   reservRepatriated.from_totalBalance = reservRepatriated.from_freeBalance + reservRepatriated.from_reserveBalance;
-  if(status === "Free"){ //the amount is added to receiver's free part of balance
-  reservRepatriated.to_freeBalance = reservRepatriated.to_freeBalance_old + BigInt(balance);
-  reservRepatriated.to_reserveBalance = reservRepatriated.to_reserveBalance_old;
+  if (status === "Free") { //the amount is added to receiver's free part of balance
+    reservRepatriated.to_freeBalance = reservRepatriated.to_freeBalance_old + BigInt(balance);
+    reservRepatriated.to_reserveBalance = reservRepatriated.to_reserveBalance_old;
   }
-  else{//the amount is added to receiver's reserve part 
-  reservRepatriated.to_freeBalance = reservRepatriated.to_freeBalance_old;
-  reservRepatriated.to_reserveBalance = reservRepatriated.to_reserveBalance_old + BigInt(balance);
+  else {//the amount is added to receiver's reserve part 
+    reservRepatriated.to_freeBalance = reservRepatriated.to_freeBalance_old;
+    reservRepatriated.to_reserveBalance = reservRepatriated.to_reserveBalance_old + BigInt(balance);
   }
   reservRepatriated.to_totalBalance = reservRepatriated.to_freeBalance + reservRepatriated.to_reserveBalance;
   //set new balance to account
