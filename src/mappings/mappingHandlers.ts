@@ -16,6 +16,13 @@ const noop = async () => {};
 
 const eventsMapping = {
   'balances/Transfer': handleTransfer,
+  'balances/BalanceSet': handleBalanceSet,
+  'balances/Deposit': handleDeposit,
+  'balances/Reserved': handleReserved,
+  'balances/Withdraw': handleWithdraw,
+  'balances/Unreserved': handleUnreserved,
+  'balances/Slash': handleSlash,
+  'balances/ReservRepatriated': handleReservRepatriated,
 };
 
 export async function handleBlock(block: SubstrateBlock): Promise<void> {

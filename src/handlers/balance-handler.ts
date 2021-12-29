@@ -15,7 +15,6 @@ const generaterID = "GENERATOR";
 
 class AccountWrapper {
   account: Account;
-  snapShotAtCurrentBlock: boolean;//是否是当前区块的快照
 }
 const getID = async () => {
   let generator = await IDGenerator.get(generaterID);
@@ -35,9 +34,9 @@ const getID = async () => {
 }
 
 
-async function getAccountInfo(address: string): Promise<any> {
+async function getAccountInfo(address: string, blockNumber: bigint): Promise<any> {
 
-  logger.info(`getAccountInfo by addres:${address}`);
+  logger.info(`getAccountInfo at ${blockNumber} by addres:${address}`);
   const raw: AccountInfo = await api.query.system.account(address) as unknown as AccountInfo;
 
   let accountInfo: any = {};
@@ -47,7 +46,7 @@ async function getAccountInfo(address: string): Promise<any> {
       free: raw.data.free.toBigInt(),
       reserved: raw.data.reserved.toBigInt(),
       total: raw.data.free.toBigInt() + raw.data.reserved.toBigInt(),
-      snapShotAtCurrentBlock: true
+      snapshotAtCurrentBlock: blockNumber
     };
   }
   else {
@@ -56,75 +55,76 @@ async function getAccountInfo(address: string): Promise<any> {
       free: 0,
       reserved: 0,
       total: 0,
-      snapShotAtCurrentBlock: false
+      snapshotAtCurrentBlock: -1
     }
   }
-  logger.info(`getAccountInfo : ${(accountInfo.address)}--${accountInfo.free}--${accountInfo.reserved}--${accountInfo.total}`);
+  logger.info(`getAccountInfo at ${blockNumber} : ${(accountInfo.address)}--${accountInfo.free}--${accountInfo.reserved}--${accountInfo.total}`);
   return accountInfo;
 }
 
-const createNewAccount = async (address: string): Promise<AccountWrapper> => {
+const createNewAccount = async (address: string, blockNumber: bigint): Promise<AccountWrapper> => {
   const account = new Account(address);
-  let fetchAccountInfo = await getAccountInfo(address);
+  let fetchAccountInfo = await getAccountInfo(address, blockNumber);
 
   account.freeBalance = BigInt(fetchAccountInfo.free);
   account.reserveBalance = BigInt(fetchAccountInfo.reserved);
   account.totalBalance = BigInt(fetchAccountInfo.total);
+  account.snapshotAtCurrentBlock = BigInt(fetchAccountInfo.snapshotAtCurrentBlock);
+
   account.aid = await getID();
+
   await account.save();
 
   let accountWrapper: AccountWrapper = {
-    account: account,
-    snapShotAtCurrentBlock: fetchAccountInfo.snapShotAtCurrentBlock
+    account: account
   }
   return accountWrapper;
 }
 
 //逻辑要调整一下.
-//因为在某个高度拿到的账户balance是已经结算好的了, 因此在这个高度上发生的交易等事件, 就不需要重复计算了.
+//在某个高度拿到的账户balance是已经结算好的了.
+//当账户创建出来时,记录snapshotAtCurrentBlock.
+//在与Account 记录snapshotAtCurrentBlock相同的区块上, 发生的事件, 都不需要重复计算了,因为已经包含在AccountSnapshot里了.
+
+//白话翻译一下:  Account 第一次出现的那个区块上, 只需要记录事件, 而不需要计算Account Balance了. 从该区块的快照开始向后, 后面区块的事件才需要计算Account Balance.
 
 export const handleTransfer = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [from, to, balanceChange] = event.data.toJSON() as [string, string, bigint];
-
+  let blockNum = bn.toBigInt();
 
   logger.info(`New Transfer happened!: ${JSON.stringify(event)}`);
 
-  //ensure that our account entities exist
-  let fromAccountSnapshot = false;
-  let toAccountSnapshot = false;
+  //ensure that our account entities exist 
   let fromAccount = await Account.get(from);
   if (!fromAccount) {
-    let result = await createNewAccount(from);
+    let result = await createNewAccount(from, blockNum);
     fromAccount = result.account;
-    fromAccountSnapshot = result.snapShotAtCurrentBlock;
-
   }
   let toAccount = await Account.get(to);
   if (!toAccount) {
-    let result = await createNewAccount(to);
+    let result = await createNewAccount(to, blockNum);
     toAccount = result.account;
-    toAccountSnapshot = result.snapShotAtCurrentBlock;
   }
 
   // Create the new transfer entity
   const transfer = new Transfer(
     `${blockNum}-${event.index}`,
   );
-  transfer.blockNumber = blockNum.toBigInt();
+  transfer.blockNumber = blockNum;
   transfer.fromId = from;
   transfer.toId = to;
   transfer.balanceChange = BigInt(balanceChange);
   transfer.aid = await getID();
 
   // Set the balance for from, to account 
-  if (fromAccountSnapshot === false) {
+  if (fromAccount.snapshotAtCurrentBlock != blockNum) {
     fromAccount.freeBalance = fromAccount.freeBalance - BigInt(balanceChange);
     fromAccount.totalBalance = fromAccount.freeBalance + fromAccount.reserveBalance;
   }
-  if (toAccountSnapshot === false) {
+  if (toAccount.snapshotAtCurrentBlock != blockNum) {
     toAccount.freeBalance = toAccount.freeBalance + BigInt(balanceChange);
     toAccount.totalBalance = toAccount.freeBalance + toAccount.reserveBalance;
   }
@@ -145,31 +145,29 @@ export const handleTransfer = async (substrateEvent: SubstrateEvent) => {
 export const handleBalanceSet = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [accountToSet, balance1, balance2] = event.data.toJSON() as [string, bigint, bigint];
-
+  let blockNum = bn.toBigInt();
 
   logger.info(`BalanceSet happened!: ${JSON.stringify(event)}`);
 
-  //ensure that our account entities exist
-  let accountSnapshotAtBlock = false;
+  //ensure that our account entities exist 
   let account = await Account.get(accountToSet);
   if (!account) {
-    let result = await createNewAccount(accountToSet);
+    let result = await createNewAccount(accountToSet, blockNum);
     account = result.account;
-    accountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new BalanceSet entity
   const balanceSet = new BalanceSet(
     `${blockNum}-${event.index}`,
   );
-  balanceSet.blockNumber = blockNum.toBigInt();
+  balanceSet.accountId = accountToSet;
+  balanceSet.blockNumber = blockNum;
   balanceSet.aid = await getID();
   balanceSet.balanceChange = BigInt(balance1) + BigInt(balance2);
 
-
-  //TODO Research 这里可能old值已经拿不到了
+  //TODO Research 这里old值已经拿不到了
   //save old balance
   balanceSet.freeBalance_old = account.freeBalance;
   balanceSet.reserveBalance_old = account.reserveBalance;
@@ -179,10 +177,14 @@ export const handleBalanceSet = async (substrateEvent: SubstrateEvent) => {
   balanceSet.freeBalance = BigInt(balance1);
   balanceSet.reserveBalance = BigInt(balance2);
   balanceSet.totalBalance = balanceSet.freeBalance + balanceSet.reserveBalance;
-  //set new balance to account
-  account.freeBalance = BigInt(balance1);
-  account.reserveBalance = BigInt(balance2);
-  account.totalBalance = BigInt(balance1) + BigInt(balance2);
+
+  //只有当快照区块与当前不同时,才更新account的数据
+  if (account.snapshotAtCurrentBlock != blockNum) {
+    //set new balance to account
+    account.freeBalance = BigInt(balance1);
+    account.reserveBalance = BigInt(balance2);
+    account.totalBalance = BigInt(balance1) + BigInt(balance2);
+  }
   await account.save();
   await balanceSet.save();
 };
@@ -191,30 +193,30 @@ export const handleBalanceSet = async (substrateEvent: SubstrateEvent) => {
 export const handleDeposit = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
+  let blockNum = bn.toBigInt();
 
 
   logger.info(`Deposit happened!: ${JSON.stringify(event)}`);
 
   //ensure that our account entities exist
-  let accountSnapshotAtBlock = false;
   let account = await Account.get(accountToSet);
   if (!account) {
-    let result = await createNewAccount(accountToSet);
+    let result = await createNewAccount(accountToSet, blockNum);
     account = result.account;
-    accountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new Deposit entity
   const deposit = new Deposit(
     `${blockNum}-${event.index}`,
   );
-  deposit.blockNumber = blockNum.toBigInt();
+  deposit.accountId = accountToSet;
+  deposit.blockNumber = blockNum;
   deposit.aid = await getID();
   deposit.balanceChange = BigInt(balance);
 
-  if (accountSnapshotAtBlock) {
+  if (account.snapshotAtCurrentBlock === blockNum) {
 
     //set new balance
     deposit.freeBalance = account.freeBalance;
@@ -255,30 +257,30 @@ export const handleDeposit = async (substrateEvent: SubstrateEvent) => {
 export const handleReserved = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
+  let blockNum = bn.toBigInt();
 
 
   logger.info(`Reserved happened!: ${JSON.stringify(event)}`);
 
   //ensure that our account entities exist
-  let accountSnapshotAtBlock = false;
   let account = await Account.get(accountToSet);
   if (!account) {
-    let result = await createNewAccount(accountToSet);
+    let result = await createNewAccount(accountToSet, blockNum);
     account = result.account;
-    accountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new Reserved entity
   const reserved = new Reserved(
     `${blockNum}-${event.index}`,
   );
-  reserved.blockNumber = blockNum.toBigInt();
+  reserved.accountId = accountToSet;
+  reserved.blockNumber = blockNum;
   reserved.aid = await getID();
   reserved.balanceChange = BigInt(balance);
 
-  if (accountSnapshotAtBlock) {
+  if (account.snapshotAtCurrentBlock === blockNum) {
     //逆向倒推旧值
     //set new balance
     reserved.freeBalance = account.freeBalance;
@@ -315,30 +317,29 @@ export const handleReserved = async (substrateEvent: SubstrateEvent) => {
 export const handleUnreserved = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
-
+  let blockNum = bn.toBigInt();
 
   logger.info(`Unreserved happened!: ${JSON.stringify(event)}`);
 
   //ensure that our account entities exist
-  let accountSnapshotAtBlock = false;
   let account = await Account.get(accountToSet);
   if (!account) {
-    let result = await createNewAccount(accountToSet);
+    let result = await createNewAccount(accountToSet, blockNum);
     account = result.account;
-    accountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new Reserved entity
   const unreserved = new Unreserved(
     `${blockNum}-${event.index}`,
   );
-  unreserved.blockNumber = blockNum.toBigInt();
+  unreserved.accountId = accountToSet;
+  unreserved.blockNumber = blockNum;
   unreserved.aid = await getID();
   unreserved.balanceChange = BigInt(balance);
 
-  if (accountSnapshotAtBlock) {
+  if (account.snapshotAtCurrentBlock === blockNum) {
     //逆向倒推旧值
     //set new balance
     unreserved.freeBalance = account.freeBalance;
@@ -378,30 +379,29 @@ export const handleUnreserved = async (substrateEvent: SubstrateEvent) => {
 export const handleWithdraw = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
-
+  let blockNum = bn.toBigInt();
 
   logger.info(`Withdraw happened!: ${JSON.stringify(event)}`);
 
   //ensure that our account entities exist
-  let accountSnapshotAtBlock = false;
   let account = await Account.get(accountToSet);
   if (!account) {
-    let result = await createNewAccount(accountToSet);
+    let result = await createNewAccount(accountToSet, blockNum);
     account = result.account;
-    accountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new Withdraw entity
   const withdraw = new Withdraw(
     `${blockNum}-${event.index}`,
   );
-  withdraw.blockNumber = blockNum.toBigInt();
+  withdraw.accountId = accountToSet;
+  withdraw.blockNumber = blockNum;
   withdraw.aid = await getID();
   withdraw.balanceChange = BigInt(balance);
 
-  if (accountSnapshotAtBlock) {
+  if (account.snapshotAtCurrentBlock === blockNum) {
     //逆向倒推旧值
 
     //set new balance
@@ -444,30 +444,29 @@ export const handleWithdraw = async (substrateEvent: SubstrateEvent) => {
 export const handleSlash = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [accountToSet, balance] = event.data.toJSON() as [string, bigint];
-
+  let blockNum = bn.toBigInt();
 
   logger.info(`Slash happened!: ${JSON.stringify(event)}`);
 
   //ensure that our account entities exist
-  let accountSnapshotAtBlock = false;
   let account = await Account.get(accountToSet);
   if (!account) {
-    let result = await createNewAccount(accountToSet);
+    let result = await createNewAccount(accountToSet, blockNum);
     account = result.account;
-    accountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new Withdraw entity
   const slash = new Slash(
     `${blockNum}-${event.index}`,
   );
-  slash.blockNumber = blockNum.toBigInt();
+  slash.accountId = accountToSet;
+  slash.blockNumber = blockNum;
   slash.aid = await getID();
   slash.balanceChange = BigInt(balance);
 
-  if (accountSnapshotAtBlock) {
+  if (account.snapshotAtCurrentBlock === blockNum) {
     //逆向倒推旧值
     //set new balance
     slash.totalBalance = account.totalBalance;
@@ -506,37 +505,37 @@ export const handleSlash = async (substrateEvent: SubstrateEvent) => {
 export const handleReservRepatriated = async (substrateEvent: SubstrateEvent) => {
   const { event, block } = substrateEvent;
   const { timestamp: createdAt, block: rawBlock } = block;
-  const { number: blockNum } = rawBlock.header;
+  const { number: bn } = rawBlock.header;
   const [sender, receiver, balance, status] = event.data.toJSON() as [string, string, bigint, string];
-
+  let blockNum = bn.toBigInt();
 
   logger.info(`Repatraiated happened!: ${JSON.stringify(event)}`);
 
   //ensure that our account entities exist
-  let senderAccountSnapshotAtBlock = false;
-  let receiverAccountSnapshotAtBlock = false;
+
   let senderAccount = await Account.get(sender);
   if (!senderAccount) {
-    let result = await createNewAccount(sender);
+    let result = await createNewAccount(sender, blockNum);
     senderAccount = result.account;
-    senderAccountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
   let receiverAccount = await Account.get(receiver);
   if (!receiverAccount) {
-    let result = await createNewAccount(receiver);
+    let result = await createNewAccount(receiver, blockNum);
     receiverAccount = result.account;
-    receiverAccountSnapshotAtBlock = result.snapShotAtCurrentBlock;
   }
 
   // Create the new Reserved entity
   const reservRepatriated = new ReservRepatriated(
     `${blockNum}-${event.index}`,
   );
-  reservRepatriated.blockNumber = blockNum.toBigInt();
+
+  reservRepatriated.fromId = senderAccount.id;
+  reservRepatriated.toId = receiverAccount.id;
+  reservRepatriated.blockNumber = blockNum;
   reservRepatriated.aid = await getID();
   reservRepatriated.balanceChange = BigInt(balance);
 
-  if (senderAccountSnapshotAtBlock) {
+  if (senderAccount.snapshotAtCurrentBlock === blockNum) {
     //逆向倒推旧值
     //save old balance
     reservRepatriated.from_freeBalance = senderAccount.freeBalance;
@@ -566,7 +565,7 @@ export const handleReservRepatriated = async (substrateEvent: SubstrateEvent) =>
     senderAccount.totalBalance = reservRepatriated.from_totalBalance;
   }
 
-  if (receiverAccountSnapshotAtBlock) {
+  if (receiverAccount.snapshotAtCurrentBlock === blockNum) {
     //逆向倒推旧值
 
     //save old balance
