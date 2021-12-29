@@ -111,6 +111,7 @@ async function taskAccountSnapshot(blockNumber: bigint, accounts4snapshot: strin
     if (!accountRecord) {
       accountRecord = Account.create({
         id: accountId,
+        atBlock: blockNumber,
         freeBalance: accountInfo.freeBalance,
         reserveBalance: accountInfo.reserveBalance,
         totalBalance: accountInfo.totalBalance,
@@ -119,6 +120,7 @@ async function taskAccountSnapshot(blockNumber: bigint, accounts4snapshot: strin
       await accountRecord.save();
     }
     else {
+      accountRecord.atBlock = blockNumber;
       accountRecord.freeBalance = accountInfo.freeBalance;
       accountRecord.reserveBalance = accountInfo.reserveBalance;
       accountRecord.totalBalance = accountInfo.totalBalance;

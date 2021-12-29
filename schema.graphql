@@ -4,6 +4,7 @@ type Account @entity {
   reserveBalance: BigInt
   totalBalance: BigInt
   aid: BigInt!
+  atBlock: BigInt!
 }
 
 type AccountSnapshot @entity {
