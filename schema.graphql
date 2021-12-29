@@ -4,129 +4,94 @@ type Account @entity {
   reserveBalance: BigInt
   totalBalance: BigInt
   aid: BigInt!
-  sentTransfers: [Transfer] @derivedFrom(field: "from")
-  recievedTransfers: [Transfer] @derivedFrom(field: "to")
-  balanceSet: [BalanceSet] @derivedFrom(field: "account")
-
-  snapshotAtCurrentBlock: BigInt  #//是否是当前区块的快照
 }
 
+type AccountSnapshot @entity {
+  "id"
+  id: ID!
+
+  accountId: String!
+  snapshotAtBlock: BigInt!
+  freeBalance: BigInt!
+  reserveBalance: BigInt!
+  totalBalance: BigInt!
+}
+
+type Endowed @entity {
+  id: ID!
+
+  blockNumber: BigInt
+  accountId: String!
+  freeBalance: BigInt
+  reserveBalance: BigInt
+  totalBalance: BigInt
+  aid: BigInt!
+}
 type Transfer @entity {
   id: ID!
   blockNumber: BigInt
-  to: Account!
-  from: Account!
+
+  toAccountId: String!
+  fromAccountId: String!
   balanceChange: BigInt
-  from_freeBalance: BigInt
-  to_freeBalance: BigInt
-  from_reserveBalance: BigInt
-  to_reserveBalance: BigInt
-  to_totalBalance: BigInt
-  from_totalBalance: BigInt
   aid: BigInt!
 }
 
 type BalanceSet @entity {
   id: ID!
   blockNumber: BigInt
-  account: Account!
+  accountId: String!
   aid: BigInt!
   balanceChange: BigInt
-  freeBalance: BigInt
-  reserveBalance: BigInt
-  freeBalance_old: BigInt
-  reserveBalance_old: BigInt
-  totalBalance: BigInt
-  totalBalance_old: BigInt
 }
 
 type Deposit @entity {
   id: ID!
   blockNumber: BigInt
-  account: Account!
+  accountId: String!
   aid: BigInt!
   balanceChange: BigInt
-  freeBalance: BigInt
-  reserveBalance: BigInt
-  freeBalance_old: BigInt
-  reserveBalance_old: BigInt
-  totalBalance: BigInt
-  totalBalance_old: BigInt
 }
 
 type Reserved @entity {
   id: ID!
   blockNumber: BigInt
-  account: Account!
+  accountId: String!
   aid: BigInt!
   balanceChange: BigInt
-  freeBalance: BigInt
-  reserveBalance: BigInt
-  freeBalance_old: BigInt
-  reserveBalance_old: BigInt
-  totalBalance: BigInt
-  totalBalance_old: BigInt
 }
 
 type Unreserved @entity {
   id: ID!
   blockNumber: BigInt
-  account: Account!
+  accountId: String!
   aid: BigInt!
   balanceChange: BigInt
-  freeBalance: BigInt
-  reserveBalance: BigInt
-  freeBalance_old: BigInt
-  reserveBalance_old: BigInt
-  totalBalance: BigInt
-  totalBalance_old: BigInt
 }
 
 type Withdraw @entity {
   id: ID!
   blockNumber: BigInt
-  account: Account!
+  accountId: String!
   aid: BigInt!
   balanceChange: BigInt
-  freeBalance: BigInt
-  reserveBalance: BigInt
-  freeBalance_old: BigInt
-  reserveBalance_old: BigInt
-  totalBalance: BigInt
-  totalBalance_old: BigInt
 }
 
 type Slash @entity {
   id: ID!
   blockNumber: BigInt
-  account: Account!
+  accountId: String!
   aid: BigInt!
   balanceChange: BigInt
-  freeBalance_old: BigInt
-  reserveBalance_old: BigInt
-  totalBalance: BigInt
-  totalBalance_old: BigInt
 }
 
 type ReservRepatriated @entity {
   id: ID!
   blockNumber: BigInt
-  to: Account!
-  from: Account!
+  toAccountId: String!
+  fromAccountId: String!
   status: String
   balanceChange: BigInt
-  from_freeBalance: BigInt
-  from_reserveBalance: BigInt
-  from_freeBalance_old: BigInt
-  from_reserveBalance_old: BigInt
-  from_totalBalance: BigInt
-  from_totalBalance_old: BigInt
-  to_freeBalance: BigInt
-  to_reserveBalance: BigInt
-  to_freeBalance_old: BigInt
-  to_reserveBalance_old: BigInt
-  to_totalBalance: BigInt
-  to_totalBalance_old: BigInt
   aid: BigInt!
 }
 
