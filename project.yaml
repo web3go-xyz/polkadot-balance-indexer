@@ -14,8 +14,8 @@ dataSources:
       handlers:
         - handler: handleBlock
           kind: substrate/BlockHandler
-        - handler: handleEvent
-          kind: substrate/EventHandler
+        # - handler: handleEvent
+        #   kind: substrate/EventHandler
       #handlers:
       #  - handler: handleTransfer
       #    kind: substrate/EventHandler
