@@ -27,6 +27,7 @@ type Endowed @entity {
   reserveBalance: BigInt
   totalBalance: BigInt
   aid: BigInt!
+  timestamp: Date
 }
 type Transfer @entity {
   id: ID!
@@ -36,6 +37,7 @@ type Transfer @entity {
   fromAccountId: String!
   balanceChange: BigInt
   aid: BigInt!
+  timestamp: Date
 }
 
 type BalanceSet @entity {
@@ -44,6 +46,7 @@ type BalanceSet @entity {
   accountId: String!
   aid: BigInt!
   balanceChange: BigInt
+  timestamp: Date
 }
 
 type Deposit @entity {
@@ -52,6 +55,7 @@ type Deposit @entity {
   accountId: String!
   aid: BigInt!
   balanceChange: BigInt
+  timestamp: Date
 }
 
 type Reserved @entity {
@@ -60,6 +64,7 @@ type Reserved @entity {
   accountId: String!
   aid: BigInt!
   balanceChange: BigInt
+  timestamp: Date
 }
 
 type Unreserved @entity {
@@ -68,6 +73,7 @@ type Unreserved @entity {
   accountId: String!
   aid: BigInt!
   balanceChange: BigInt
+  timestamp: Date
 }
 
 type Withdraw @entity {
@@ -76,6 +82,7 @@ type Withdraw @entity {
   accountId: String!
   aid: BigInt!
   balanceChange: BigInt
+  timestamp: Date
 }
 
 type Slash @entity {
@@ -84,6 +91,7 @@ type Slash @entity {
   accountId: String!
   aid: BigInt!
   balanceChange: BigInt
+  timestamp: Date
 }
 
 type ReservRepatriated @entity {
@@ -94,6 +102,7 @@ type ReservRepatriated @entity {
   status: String
   balanceChange: BigInt
   aid: BigInt!
+  timestamp: Date
 }
 
 type IDGenerator @entity {
