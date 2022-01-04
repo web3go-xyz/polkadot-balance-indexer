@@ -11,6 +11,8 @@ import { ReservRepatriated } from "../types/models/ReservRepatriated";
 import { AccountInfo, EventRecord } from "@polkadot/types/interfaces/system";
 import { Account, AccountSnapshot, Endowed } from "../types";
 
+const enableTakeAccountSnapshot: boolean = false;
+
 class AccountInfoAtBlock {
   accountId: string;
   freeBalance: bigint;
@@ -82,11 +84,13 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
     }
   }
 
-  if (accounts4snapshot && accounts4snapshot.length > 0) {
-    await taskAccountSnapshot(blockNumber, accounts4snapshot);
+  if (enableTakeAccountSnapshot === true) {
+    if (accounts4snapshot && accounts4snapshot.length > 0) {
+      await takeAccountSnapshot(blockNumber, accounts4snapshot);
+    }
   }
 }
-async function taskAccountSnapshot(
+async function takeAccountSnapshot(
   blockNumber: bigint,
   accounts4snapshot: string[]
 ) {
