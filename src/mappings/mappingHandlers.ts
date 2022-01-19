@@ -167,7 +167,7 @@ async function getAccountInfoAtBlockNumber(
   return accountInfo;
 }
 
-export async function handleEvent(event: SubstrateEvent): Promise<void> {}
+export async function handleEvent(event: SubstrateEvent): Promise<void> { }
 
 const generaterID = "GENERATOR";
 
@@ -231,12 +231,13 @@ export const handleTransfer = async (
   logger.info(`New Transfer happened!: ${JSON.stringify(event)}`);
 
   // Create the new transfer entity
-  const transfer = new Transfer(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const transfer = new Transfer(`${blockNum}-${event.index}-${aID}`);
   transfer.blockNumber = blockNum;
   transfer.fromAccountId = from;
   transfer.toAccountId = to;
   transfer.balanceChange = BigInt(balanceChange);
-  transfer.aid = await getID();
+  transfer.aid = aID;
   transfer.timestamp = block.timestamp;
 
   await transfer.save();
@@ -262,10 +263,11 @@ export const handleBalanceSet = async (
   logger.info(`BalanceSet happened!: ${JSON.stringify(event)}`);
 
   // Create the new BalanceSet entity
-  const balanceSet = new BalanceSet(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const balanceSet = new BalanceSet(`${blockNum}-${event.index}-${aID}`);
   balanceSet.accountId = accountToSet;
   balanceSet.blockNumber = blockNum;
-  balanceSet.aid = await getID();
+  balanceSet.aid = aID;
   balanceSet.balanceChange = BigInt(balance1) + BigInt(balance2);
   balanceSet.timestamp = block.timestamp;
 
@@ -287,10 +289,11 @@ export const handleDeposit = async (
   logger.info(`Deposit happened!: ${JSON.stringify(event)}`);
 
   // Create the new Deposit entity
-  const deposit = new Deposit(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const deposit = new Deposit(`${blockNum}-${event.index}-${aID}`);
   deposit.accountId = accountToSet;
   deposit.blockNumber = blockNum;
-  deposit.aid = await getID();
+  deposit.aid = aID;
   deposit.balanceChange = BigInt(balance);
   deposit.timestamp = block.timestamp;
 
@@ -312,10 +315,11 @@ export const handleReserved = async (
   logger.info(`Reserved happened!: ${JSON.stringify(event)}`);
 
   // Create the new Reserved entity
-  const reserved = new Reserved(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const reserved = new Reserved(`${blockNum}-${event.index}-${aID}`);
   reserved.accountId = accountToSet;
   reserved.blockNumber = blockNum;
-  reserved.aid = await getID();
+  reserved.aid = aID;
   reserved.balanceChange = BigInt(balance);
   reserved.timestamp = block.timestamp;
 
@@ -338,10 +342,11 @@ export const handleUnreserved = async (
   logger.info(`Unreserved happened!: ${JSON.stringify(event)}`);
 
   // Create the new Reserved entity
-  const unreserved = new Unreserved(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const unreserved = new Unreserved(`${blockNum}-${event.index}-${aID}`);
   unreserved.accountId = accountToSet;
   unreserved.blockNumber = blockNum;
-  unreserved.aid = await getID();
+  unreserved.aid = aID;
   unreserved.balanceChange = BigInt(balance);
   unreserved.timestamp = block.timestamp;
 
@@ -364,10 +369,11 @@ export const handleWithdraw = async (
   logger.info(`Withdraw happened!: ${JSON.stringify(event)}`);
 
   // Create the new Withdraw entity
-  const withdraw = new Withdraw(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const withdraw = new Withdraw(`${blockNum}-${event.index}-${aID}`);
   withdraw.accountId = accountToSet;
   withdraw.blockNumber = blockNum;
-  withdraw.aid = await getID();
+  withdraw.aid = aID;
   withdraw.balanceChange = BigInt(balance);
   withdraw.timestamp = block.timestamp;
 
@@ -393,10 +399,11 @@ export const handleSlash = async (
   logger.info(`Slash happened!: ${JSON.stringify(event)}`);
 
   // Create the new Withdraw entity
-  const slash = new Slash(`${blockNum}-${event.index}`);
+  let aID = await getID();
+  const slash = new Slash(`${blockNum}-${event.index}-${aID}`);
   slash.accountId = accountToSet;
   slash.blockNumber = blockNum;
-  slash.aid = await getID();
+  slash.aid = aID;
   slash.balanceChange = BigInt(balance);
   slash.timestamp = block.timestamp;
 
@@ -433,12 +440,13 @@ export const handleReservRepatriated = async (
   //ensure that our account entities exist
 
   // Create the new Reserved entity
-  const reservRepatriated = new ReservRepatriated(`${blockNum}-${event.index}`);
+  let aID=await getID();
+  const reservRepatriated = new ReservRepatriated(`${blockNum}-${event.index}-${aID}`);
 
   reservRepatriated.fromAccountId = sender;
   reservRepatriated.toAccountId = receiver;
   reservRepatriated.blockNumber = blockNum;
-  reservRepatriated.aid = await getID();
+  reservRepatriated.aid = aID;
   reservRepatriated.balanceChange = BigInt(balance);
   reservRepatriated.timestamp = block.timestamp;
 
