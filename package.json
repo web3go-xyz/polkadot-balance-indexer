@@ -1,5 +1,5 @@
 {
-  "name": "dot_indexer",
+  "name": "kusama-balance-indexer",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -9,8 +9,8 @@
     "test": "jest",
     "codegen": "./node_modules/.bin/subql codegen"
   },
-  "homepage": "https://github.com/subquery/subql-starter",
-  "repository": "github:subquery/subql-starter",
+  "homepage": "",
+  "repository": "",
   "files": [
     "dist",
     "schema.graphql",
