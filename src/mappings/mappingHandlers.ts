@@ -20,6 +20,12 @@ class AccountInfoAtBlock {
   totalBalance: bigint;
   snapshotAtBlock: bigint;
 }
+
+/**
+ * Handle block data from the current fetched block
+ * @method handleBlock
+ * @param {SubstrateBlock} block - The fetched block containing block data info
+ */  
 export async function handleBlock(block: SubstrateBlock): Promise<void> {
   let blockNumber = block.block.header.number.toBigInt();
 
@@ -90,6 +96,13 @@ export async function handleBlock(block: SubstrateBlock): Promise<void> {
     }
   }
 }
+
+/**
+ * Save target accounts info to db
+ * @method takeAccountSnapshot
+ * @param {bigint} blockNumber - The fetched block number
+ * @param {string[]} accounts4snapshot - The accounts to be saved
+ */  
 async function takeAccountSnapshot(
   blockNumber: bigint,
   accounts4snapshot: string[]
@@ -134,6 +147,13 @@ async function takeAccountSnapshot(
     }
   }
 }
+
+/**
+ * Get the latest accounts info via polkadot js 
+ * @method getAccountInfoAtBlockNumber
+ * @param {string} accountId - The accountId
+ * @param {bigint} blockNumber - The block number
+ */  
 async function getAccountInfoAtBlockNumber(
   accountId: string,
   blockNumber: bigint
@@ -167,10 +187,20 @@ async function getAccountInfoAtBlockNumber(
   return accountInfo;
 }
 
+/**
+ * Handle event data at the fetched block
+ * @method handleEvent
+ * @param {SubstrateEvent} event - The event containing data about an event emitted
+ */  
 export async function handleEvent(event: SubstrateEvent): Promise<void> { }
 
 const generaterID = "GENERATOR";
 
+/**
+ * Eeturn an auto-generated id for record id assignment
+ * @method getID
+ * @returns {bigint} an auto-generated id 
+ */  
 const getID = async () => {
   let generator = await IDGenerator.get(generaterID);
   if (generator == null) {
@@ -187,6 +217,12 @@ const getID = async () => {
   }
 };
 
+/**
+ * Handle and save 'Endowed' event 
+ * @method handleEndowed
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */  
 async function handleEndowed(
   block: SubstrateBlock,
   substrateEvent: EventRecord
@@ -214,6 +250,12 @@ async function handleEndowed(
   return [accountId];
 }
 
+/**
+ * Handle and save 'Transfer' event 
+ * @method handleTransfer
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */  
 export const handleTransfer = async (
   block: SubstrateBlock,
   substrateEvent: EventRecord
@@ -245,6 +287,12 @@ export const handleTransfer = async (
   return [from, to];
 };
 
+/**
+ * Handle and save 'BalanceSet' event 
+ * @method handleBalanceSet
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */  
 //“AccountId” ‘s free balance =”Balance1”, reserve balance = “Balance2”
 export const handleBalanceSet = async (
   block: SubstrateBlock,
@@ -275,6 +323,12 @@ export const handleBalanceSet = async (
   return [accountToSet];
 };
 
+/**
+ * Handle and save 'Deposit' event 
+ * @method handleDeposit
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */ 
 //“AccountId” ’s free balance + “Balance”
 export const handleDeposit = async (
   block: SubstrateBlock,
@@ -301,6 +355,12 @@ export const handleDeposit = async (
   return [accountToSet];
 };
 
+/**
+ * Handle and save 'Reserved' event 
+ * @method handleReserved
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */ 
 //“AccountId” ‘s free balance - “Balance”,“AccountId” ‘s reserve balance + “Balance”
 export const handleReserved = async (
   block: SubstrateBlock,
@@ -328,6 +388,12 @@ export const handleReserved = async (
   return [accountToSet];
 };
 
+/**
+ * Handle and save 'Unreserved' event 
+ * @method handleUnreserved
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */ 
 //“AccountId” ‘s free balance + “Balance”, “AccountId” ‘s reserve balance - “Balance”
 export const handleUnreserved = async (
   block: SubstrateBlock,
@@ -355,6 +421,12 @@ export const handleUnreserved = async (
   return [accountToSet];
 };
 
+/**
+ * Handle and save 'Withdraw' event 
+ * @method handleWithdraw
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */  
 //“AccountId” ‘s free balance - “Balance”
 export const handleWithdraw = async (
   block: SubstrateBlock,
@@ -382,6 +454,12 @@ export const handleWithdraw = async (
   return [accountToSet];
 };
 
+/**
+ * Handle and save 'Slash' event 
+ * @method handleSlash
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */  
 //“AccountId” ‘s total balance - “Balance”
 //(hard to determine if the slash happens on free/reserve)
 //If it is called through internal method “slash”, then it will prefer free balance first but potential slash reserve if free is not sufficient.
@@ -419,7 +497,12 @@ export const handleSlash = async (
     Status: Indicating the amount is added to receiver's reserve part or free part of balance.
     “AccountId1” ‘s reserve balance - “Balance”
     “AccountId2” ‘s “Status” balance + “Balance” (”Status” indicator of free/reserve part) */
-
+/**
+ * Handle and save 'ReservRepatriated' event 
+ * @method handleReservRepatriated
+ * @param {SubstrateBlock} block - The block containing data in fetch block
+ * @param {EventRecord} substrateEvent - The event containing data about an event emitted
+ */  
 export const handleReservRepatriated = async (
   block: SubstrateBlock,
   substrateEvent: EventRecord
