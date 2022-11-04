@@ -10,19 +10,19 @@ runner:
   query:
     name: "@subql/query"
     version: ">=1.2.1"
-
 network:
   endpoint: wss://kusama.api.onfinality.io/public-ws
   genesisHash: "0xb0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe"
   # endpoint: wss://kusama-rpc.polkadot.io
   dictionary: https://api.subquery.network/sq/subquery/kusama-dictionary
 
-
 dataSources:
   - name: main
     kind: substrate/Runtime
-    startBlock: 9866422 # => runtime 9122
-    mapping: 
+    filter:
+      specName: kusama
+    startBlock: 14916158 # => runtime 9122
+    mapping:
       file: ./dist/index.js
       handlers:
         - handler: handleBlock

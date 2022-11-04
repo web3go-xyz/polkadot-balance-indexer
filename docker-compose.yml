@@ -17,7 +17,7 @@ services:
       - -f=/app
       - --db-schema=public
       - --scale-batch-size=true
-      - --batch-size=20
+      - --batch-size=10
 
       # - -f=/app
       # - --local
