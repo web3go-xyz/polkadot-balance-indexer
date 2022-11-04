@@ -1,16 +1,29 @@
-specVersion: 0.0.1
+specVersion: 1.0.0
 description: ''
 repository: ''
-schema: ./schema.graphql
+schema:
+  file: ./schema.graphql
+runner:
+  node:
+    name: "@subql/node"
+    version: ">=1.2.1"
+  query:
+    name: "@subql/query"
+    version: ">=1.2.1"
 network:
   #endpoint: wss://polkadot.api.onfinality.io/ws?apikey=e9800acf-fd32-4a24-8855-f80bca12a2fd
   endpoint: wss://polkadot.api.onfinality.io/public-ws
-  dictionary: https://api.subquery.network/sq/subquery/dictionary-polkadot
+  genesisHash: "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3"
+  dictionary: https://api.subquery.network/sq/subquery/polkadot-dictionary
+
 dataSources:
   - name: main
     kind: substrate/Runtime
-    startBlock: 7560558  # 7560558   7560585 7560724
+    filter:
+      specName: polkadot
+    startBlock: 7560558
     mapping:
+      file: ./dist/index.js
       handlers:
         - handler: handleBlock
           kind: substrate/BlockHandler
