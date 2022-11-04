@@ -1,15 +1,29 @@
-specVersion: 0.0.1
+specVersion: 1.0.0
 description: ''
 repository: ''
-schema: ./schema.graphql
+schema:
+  file: ./schema.graphql
+runner:
+  node:
+    name: "@subql/node"
+    version: ">=1.2.1"
+  query:
+    name: "@subql/query"
+    version: ">=1.2.1"
+
 network:
-  endpoint: wss://kusama-rpc.polkadot.io
+  endpoint: wss://kusama.api.onfinality.io/public-ws
+  genesisHash: "0xb0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe"
+  # endpoint: wss://kusama-rpc.polkadot.io
   dictionary: https://api.subquery.network/sq/subquery/kusama-dictionary
+
+
 dataSources:
   - name: main
     kind: substrate/Runtime
     startBlock: 9866422 # => runtime 9122
-    mapping:
+    mapping: 
+      file: ./dist/index.js
       handlers:
         - handler: handleBlock
           kind: substrate/BlockHandler
